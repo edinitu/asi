@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import socket
 import json
 from json import JSONDecodeError
@@ -33,11 +35,12 @@ client_socket.connect((host, port))
 try:
     # Receive welcome message from server
     received_data = client_socket.recv(1024).decode()
-    print(received_data)
+    received_data = json.loads(received_data)
+    print(received_data[0])
 
     # Receive his table from server (with 3 random battleships)
-    received_data = client_socket.recv(1024).decode()
-    table = json.loads(received_data)
+    # received_data = client_socket.recv(1024).decode()
+    table = received_data[1]
     print("Incepe jocul, pregateste-te sa introduci coordonatele liniei si a coloanei unde vrei sa faci tragerea.")
 
     # Print the table
@@ -56,6 +59,8 @@ try:
                 continue
             else:
                 print(received_data)
+
+            client_socket.send("ACK".encode())
 
             print("Tabela ta cu avioane este:\n")
             received_data = client_socket.recv(1024).decode()

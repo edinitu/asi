@@ -1,8 +1,8 @@
+#!/usr/bin/env python
+
 import socket
 import json
 import random
-import sys
-
 
 # import keyboard
 
@@ -123,28 +123,32 @@ server_socket.bind((host, port))
 
 # Wait for client connection
 server_socket.listen(2)
+
+print('Server-ul asculta pe {}:{}'.format(host, port))
+
+# Establish connection with client
+client1_socket, addr1 = server_socket.accept()
+client1_socket.send(serialize_data(['Player 1, vei face prima mutare!', table1]).encode())
+# send_table(client1_socket, table1)
+
+client2_socket, addr2 = server_socket.accept()
+client2_socket.send(serialize_data(['Player 2, vei face a doua mutare!', table2]).encode())
+# send_table(client2_socket, table2)
+
+print(f'Player 1 cu adresa {addr1} s-a conectat')
+print(f'Player 2 cu adresa {addr2} s-a conectat')
+print('Incepe jocul!')
+
+# Print clients tables
+print("Avioanele de pe tabela lui Player 1")
+print_table(table1)
+
+print("Avioanele de pe tabela lui Player 2")
+print_table(table2)
+
+# Send the tables to the clients
+
 try:
-    print('Server-ul asculta pe {}:{}'.format(host, port))
-
-    # Establish connection with client
-    client1_socket, addr1 = server_socket.accept()
-    client1_socket.send('Player 1, vei face prima mutare!'.encode())
-    client2_socket, addr2 = server_socket.accept()
-    client2_socket.send('Player 2, vei face a doua mutare!'.encode())
-    print(f'Player 1 cu adresa {addr1} s-a conectat')
-    print(f'Player 2 cu adresa {addr2} s-a conectat')
-    print('Incepe jocul!')
-
-    # Print clients tables
-    print("Avioanele de pe tabela lui Player 1")
-    print_table(table1)
-
-    print("Avioanele de pe tabela lui Player 2")
-    print_table(table2)
-
-    # Send the tables to the clients
-    send_table(client1_socket, table1)
-    send_table(client2_socket, table2)
     while True:
         # Receive move from client 1
         move = client1_socket.recv(1024).decode()
@@ -168,43 +172,49 @@ try:
 
         client2_socket.send('Coordonate valide, se face tragerea...'.encode())
         print(f'Player2 a mutat: {move[0]} {move[1]}')
-        ire(table1, move[0] - 1, move[1] - 1)
+        fire(table1, move[0] - 1, move[1] - 1)
 
-        # send confirmation that the shots were fired by both players
-        # if ok1 and ok2:
-        #     client1_socket.send('Fire OK'.encode())
-        #     client2_socket.send('Fire OK'.encode())
-        # else:
-        #     continue
+        ack1 = client1_socket.recv(1024).decode()
+        ack2 = client2_socket.recv(1024).decode()
 
-        # Send the tables to the clients
-        send_table(client1_socket, [table1, table2])
-        send_table(client2_socket, [table2, table1])
+        if "ACK" in ack1 and "ACK" in ack2:
+            # send confirmation that the shots were fired by both players
+            # if ok1 and ok2:
+            #     client1_socket.send('Fire OK'.encode())
+            #     client2_socket.send('Fire OK'.encode())
+            # else:
+            #     continue
 
-        # Print clients tables
-        print("Avioanele de pe tabela lui Player 1")
-        print_table(table1)
+            # Send the tables to the clients
+            send_table(client1_socket, [table1, table2])
+            send_table(client2_socket, [table2, table1])
 
-        print("Avioanele de pe tabela lui Player 2")
-        print_table(table2)
+            # Print clients tables
+            print("Avioanele de pe tabela lui Player 1")
+            print_table(table1)
 
-        # check win
-        if check_win(table1):
-            print("Player 2 a castigat!")
-            client2_socket.send('Felicitari, ai castigat jocul!'.encode())
-            client1_socket.send('De aceasta data ai pierdut! Mai incearca!'.encode())
-            client1_socket.close()
-            client2_socket.close()
-            break
-        if check_win(table2):
-            print("Player 1 a castigat!")
-            client1_socket.send('Felicitari, ai castigat jocul!'.encode())
-            client2_socket.send('De aceasta data ai pierdut! Mai incearca!'.encode())
-            client1_socket.close()
-            client2_socket.close()
-            break
-        client1_socket.send('Jocul continua!'.encode())
-        client2_socket.send('Jocul continua!'.encode())
-        continue
+            print("Avioanele de pe tabela lui Player 2")
+            print_table(table2)
+
+            # check win
+            if check_win(table1):
+                print("Player 2 a castigat!")
+                client2_socket.send('Felicitari, ai castigat jocul!'.encode())
+                client1_socket.send('De aceasta data ai pierdut! Mai incearca!'.encode())
+                client1_socket.close()
+                client2_socket.close()
+                break
+            if check_win(table2):
+                print("Player 1 a castigat!")
+                client1_socket.send('Felicitari, ai castigat jocul!'.encode())
+                client2_socket.send('De aceasta data ai pierdut! Mai incearca!'.encode())
+                client1_socket.close()
+                client2_socket.close()
+                break
+            client1_socket.send('Jocul continua!'.encode())
+            client2_socket.send('Jocul continua!'.encode())
+            continue
 except KeyboardInterrupt:
     print("\nCTRL+C detected, exiting...")
+    client1_socket.close()
+    client2_socket.close()
